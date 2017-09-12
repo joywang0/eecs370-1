@@ -67,6 +67,7 @@ main(int argc, char *argv[])
 
     /* after doing a readAndParse, you may want to do the following to test the
         opcode */
+		int PC=0;
 	while(readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)!=0){ 
 			if (!strcmp(opcode, "add")) {
    		/* do whatever you need to do for opcode "add" */
@@ -89,7 +90,7 @@ main(int argc, char *argv[])
 			else{
 				for(i=0;i<1000;i++){
 					if(!strcmp(labelindex[i],label)){
-						offsetnum=i;
+						offsetnum=convertNum(i);
 						break;
 					}		
 				}
@@ -107,16 +108,36 @@ main(int argc, char *argv[])
 			else{
 				for(i=0;i<1000;i++){
 					if(!strcmp(labelindex[i],label)){
-						offsetnum=i;
+						offsetnum=convertNum(i);
 						break;
 					}		
 				}
-				bnum=(3<<23)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
+				bnum=(3<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
 				fprintf(outFilePtr,"%d\n",bnum);	
-			}		
-		
+			}
 		}
-    }
+		else if(!strcmp(opcode,"beq")){
+				if(isNumber(arg2)==1){
+						offsetnum=convertNum(atoi(arg2));
+						bnum=(4<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
+						fprintf(outFilePtr,"%d\n",bnum);
+				}
+				else{
+						for(i=0;i<1000;i++){
+							if(!strcmp(labelindex[i],label)){
+									offsetnum=convertNum(i-1-PC);
+									break;
+							}
+						}
+							bnum=(4<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
+							fprintf(outFilePtr,"%d\n",bnum);
+				}
+		}
+		PC++;	
+	}
+	
+
+    
 		
     return(0);
 }
