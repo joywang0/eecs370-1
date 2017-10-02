@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+//123
 #define MAXLINELENGTH 1000
 
 int readAndParse(FILE *, char *, char *, char *, char *, char *);
@@ -29,6 +29,7 @@ main(int argc, char *argv[])
 	int j;
 	for(j=0;j<1000;j++){
 		labelindex[j]=(char*)malloc(1000*sizeof(char));
+		strcpy(labelindex[j],"");
 	}
     if (argc != 3) {
         printf("error: usage: %s <assembly-code-file> <machine-code-file>\n",
@@ -56,7 +57,7 @@ main(int argc, char *argv[])
     while(readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)!=0) {
         /* reached end of file */
 		if(strcmp(label,"") && (label[0]=='0' || label[0]=='1' || label[0]=='2' || label[0]=='3' || label[0]=='4' || label[0]=='5' || label[0]=='6' || label[0]=='7' || label[0]=='8' || label[0]=='9' || strlen(label)>6)){
-			printf("error: label not valid");
+			printf("error: label not valid\n");
 			exit(1);		
 		}
 		strcpy(labelindex[i],label);
@@ -64,7 +65,15 @@ main(int argc, char *argv[])
 		i++;
     }
 //	printf("%s\n",labelindex[2]);
-
+	int m,n;
+	for(m=0;m<1000;m++){
+		for(n=m+1;n<1000;n++){
+			if(!strcmp(labelindex[m],labelindex[n]) && strcmp(labelindex[m],"") ){
+				printf("error: duplicate labels\n");
+				exit(1);
+			}	
+		}
+	}
     /* this is how to rewind the file ptr so that you start reading from the
         beginning of the file */
     rewind(inFilePtr);
@@ -72,6 +81,7 @@ main(int argc, char *argv[])
     /* after doing a readAndParse, you may want to do the following to test the
         opcode */
 		int PC=0;
+		int flag;
 	while(readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)!=0){ 
 			if (!strcmp(opcode, "add")) {
    		/* do whatever you need to do for opcode "add" */
@@ -86,60 +96,145 @@ main(int argc, char *argv[])
 		}
 		else if(!strcmp(opcode,"lw")){
 			if(isNumber(arg2)==1){
-				offsetnum=convertNum(atoi(arg2));
-				//printf("%d",offsetnum);
-				bnum=(1<<23)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
+				offsetnum=atoi(arg2);
+				if(offsetnum>=((1<<15)) || offsetnum<(-(1<<15))){
+					printf("error: offset number do not fit in 16 bits\n");
+					exit(1);
+				}
+				if(offsetnum>=0)
+					bnum=(1<<23)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
+				else
+					bnum=(1<<23)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+(unsigned int)offsetnum-(65535<<16);
+
 				fprintf(outFilePtr,"%d\n",bnum);
 			}
 			else{
 				for(i=0;i<1000;i++){
 					if(!strcmp(labelindex[i],arg2)){
-						offsetnum=convertNum(i);
+						offsetnum=i;
+						flag=1;
 						break;
-					}		
+					}
 				}
+				if(flag!=1){
+					printf("error: undefined labels\n");
+					exit(1);
+				}
+				if(offsetnum>=((1<<15)) || offsetnum<(-(1<<15))){
+					printf("error: offset number do not fit in 16 bits\n");
+					exit(1);
+				}
+
 				bnum=(1<<23)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
 				fprintf(outFilePtr,"%d\n",bnum);	
 			}		
 		}
 		else if(!strcmp(opcode,"sw")){
 			if(isNumber(arg2)==1){
-				offsetnum=convertNum(atoi(arg2));
+				offsetnum=atoi(arg2);
 				//printf("%d",offsetnum);
-				bnum=(3<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
+				if(offsetnum>=((1<<15)) || offsetnum<(-(1<<15))){
+					printf("error: offset number do not fit in 16 bits\n");
+					exit(1);
+				}
+				if(offsetnum>=0)
+					bnum=(1<<22)+(1<<23)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
+				else
+					bnum=(3<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+(unsigned int)offsetnum-(65535<<16);
+
 				fprintf(outFilePtr,"%d\n",bnum);
 			}
 			else{
 				for(i=0;i<1000;i++){
 					if(!strcmp(labelindex[i],arg2)){
-						offsetnum=convertNum(i);
+						offsetnum=i;
+						flag=1;
 						break;
 					}		
 				}
+				if(flag!=1){
+					printf("error: undefined labels\n");
+					exit(1);
+				}
+
+				if(offsetnum>=((1<<15)) || offsetnum<(-(1<<15))){
+					printf("error: offset number do not fit in 16 bits\n");
+					exit(1);
+				}
+
 				bnum=(3<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
 				fprintf(outFilePtr,"%d\n",bnum);	
 			}
 		}
 		else if(!strcmp(opcode,"beq")){
 				if(isNumber(arg2)==1){
-						offsetnum=convertNum(atoi(arg2));
-						bnum=(4<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
-						fprintf(outFilePtr,"%d\n",bnum);
+						offsetnum=atoi(arg2);
+				if(offsetnum>=((1<<15)) || offsetnum<(-(1<<15))){
+					printf("error: offset number do not fit in 16 bits\n");
+					exit(1);
+				}
+				if(offsetnum>=0)
+					bnum=(4<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
+				else
+					bnum=(4<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+(unsigned int)offsetnum-(65535<<16);
+
+				fprintf(outFilePtr,"%d\n",bnum);
 				}
 				else{
 						//printf("%s\n",labelindex[2]);
 						for(i=0;i<1000;i++){
 							if(!strcmp(labelindex[i],arg2)){
 									offsetnum=(i-1-PC);
+									flag=1;
 									break;
 							}
 						}
-							if(offsetnum>=0)
-								bnum=(4<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
-							else
-								bnum=(4<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+(unsigned int)offsetnum-(65535<<16);
-							fprintf(outFilePtr,"%d\n",bnum);
+						if(flag!=1){
+							printf("error: undefined labels\n");
+							exit(1);
+						}	
+
+						if(offsetnum>=(1<<15) || offsetnum<(-(1<<15))){
+							printf("error: offset number do not fit in 16 bits\n");								exit(1);
+						}
+		
+						if(offsetnum>=0)
+							bnum=(4<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+offsetnum;
+						else
+							bnum=(4<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16)+(unsigned int)offsetnum-(65535<<16);
+						fprintf(outFilePtr,"%d\n",bnum);
 				}
+		}
+		else if(!strcmp(opcode,"jalr")){
+			bnum=(5<<22)+(atoi(arg0)<<19)+(atoi(arg1)<<16);
+			fprintf(outFilePtr,"%d\n",bnum);
+		}
+		else if(!strcmp(opcode,"halt")){
+			bnum=(6<<22);
+			fprintf(outFilePtr,"%d\n",bnum);
+		}
+		else if(!strcmp(opcode,"noop")){
+			bnum=(7<<22);
+			fprintf(outFilePtr,"%d\n",bnum);
+		}
+		else if(!strcmp(opcode,".fill")){
+			if(isNumber(arg0)==1){
+				bnum=atoi(arg0);
+				fprintf(outFilePtr,"%d\n",bnum);
+			}
+			else{
+				for(i=0;i<1000;i++){
+					if(!strcmp(labelindex[i],arg0)){	
+						bnum=i;
+						break;
+					}
+				}
+				fprintf(outFilePtr,"%d\n",bnum);
+			}
+		}
+		else{
+			printf("error: unrecognized opcodes.\n");
+			exit(1);
 		}
 		PC++;	
 	}
