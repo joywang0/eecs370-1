@@ -1,0 +1,6 @@
+inf     add     3       6       1    load reg1 with 5 (symbolic address)
+        sw      3       5       -9       load reg2 with -1 (numeric address)
+        jalr    6       1              decrement reg1
+        noop    
+	beq  	7	7	inf
+	halt
