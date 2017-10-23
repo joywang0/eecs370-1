@@ -349,7 +349,30 @@ main(int argc, char *argv[])
 					if(!strcmp(labelindex[i],arg0)){	
 						data[datanum]=i;
 						datanum++;
+						flag=1;
 						break;
+					}
+				}
+				if(flag==0){
+					if(arg0[0]>='A' && arg0[0]<='Z'){
+						data[datanum]=0;
+						datanum++;
+						for(j=0;j<1000;++j){
+							if(!strcmp(symbolTable[j].name,arg0)){
+								ifsymbol=1;
+								break;
+							}
+						}
+						if(ifsymbol==0){
+							strcpy(symbolTable[symbolnum].name,arg0);
+							symbolTable[symbolnum].type='U';
+							symbolTable[symbolnum].line=0;
+							symbolnum++;
+						}
+					}
+					else{
+						printf("Undefined local labels\n");
+						exit(1);
 					}
 				}
 			//	fprintf(outFilePtr,"%d\n",bnum);
