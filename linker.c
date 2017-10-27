@@ -242,11 +242,12 @@ int main(int argc, char *argv[])
 	int n=0;
 //	m=0;
 //	n=0;
-
+	
 	for(i=0;i<argc-2;++i){
 		for(j=0;j<files[i].symbolTableSize;++j){
 			if(files[i].symbolTable[j].location!='U'){
 				strcpy(all.symTable[m].label,files[i].symbolTable[j].label);
+				all.symTable[m].offset=0;
 				if(files[i].symbolTable[j].location=='T'){
 					all.symTable[m].location='T';
 					for(k=0;k<i;++k)
@@ -256,8 +257,10 @@ int main(int argc, char *argv[])
 				if(files[i].symbolTable[j].location=='D'){
 					all.symTable[m].location='D';
 					for(k=0;k<i;++k)
-						all.symTable[m].offset+=files[k].textSize+files[k].dataSize;
-					all.symTable[m].offset+=files[i].symbolTable[j].offset+files[i].textSize;
+						all.symTable[m].offset+=files[k].dataSize;
+					for(k=0;k<argc-2;++k)
+						all.symTable[m].offset+=files[k].textSize;
+					all.symTable[m].offset+=files[i].symbolTable[j].offset;
 				}
 				m++;
 			}	
@@ -294,7 +297,7 @@ int main(int argc, char *argv[])
 				m=0;
 				if(strcmp(files[i].relocTable[j].inst,".fill")){
 					int address=0x0000ffff & files[i].text[files[i].relocTable[j].offset];
-					if(address<files[i].textSize-1){
+					if(address<files[i].textSize){
 						for(k=0;k<i;++k)
 							m+=files[k].textSize;
 						m+=address;
@@ -311,7 +314,7 @@ int main(int argc, char *argv[])
 				}
 				else{
 					int address=files[i].data[files[i].relocTable[j].offset];
-					if(address<files[i].textSize-1){
+					if(address<files[i].textSize){
 						for(k=0;k<i;++k)
 							m+=files[k].textSize;
 						m+=address;
