@@ -97,7 +97,7 @@ int main(int argc, char* argv[]){
    	}
 
 	printf("%d memory words\n",state.numMemory+1);
-	printf("instruction memory:\n");
+	printf("	instruction memory:\n");
 	
 	int i;
 	for(i=0;i<state.numMemory;++i){
@@ -120,7 +120,8 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 void run(stateType *state,stateType *newState){
-	while (1) {
+	int j=0;
+	while (j!=4/*1*/) {
 
 		printState(state);
 
@@ -148,7 +149,7 @@ void run(stateType *state,stateType *newState){
 	newState->IDEX.offset=convertNum(field2(state->IFID.instr));
 
 	//lw hazard
-	if(opcode(state->IDEX.instr)==2){
+	if(opcode(state->IDEX.instr)==2/* && opcode(state->IFID.instr!=7) && opcode(state->IFID.instr!=6) && opcode(state->IFID.instr!=5)*/){
 		if((field1(state->IDEX.instr)==field0(state->IFID.instr)) || (field1(state->IDEX.instr))==field1(state->IFID.instr)){
 			newState->pc--;
 			newState->IDEX.instr=NOOPINSTRUCTION;
@@ -251,10 +252,11 @@ void run(stateType *state,stateType *newState){
 		newState->reg[field2(state->MEMWB.instr)]=state->MEMWB.writeData;	
 	else if(op==2)
 		newState->reg[field1(state->MEMWB.instr)]=state->MEMWB.writeData;
-		state = newState; /* this is the last statement before end of the loop.
+	state = newState; /* this is the last statement before end of the loop.
 			It marks the end of the cycle and updates the
 			current state with the values calculated in this
 			cycle */
+	++j;
 	}
 }
 
