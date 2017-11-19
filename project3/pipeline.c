@@ -1,5 +1,6 @@
-#include<studio.h>
+#include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 #define NUMMEMORY 65536 /* maximum number of data words in memory */
 #define NUMREGS 8 /* number of machine registers */
 #define ADD 0
@@ -10,7 +11,7 @@
 #define JALR 5 /* JALR will not implemented for Project 3 */
 #define HALT 6
 #define NOOP 7
-
+#define MAXLINELENGTH 3000
 #define NOOPINSTRUCTION 0x1c00000
 
 typedef struct IFIDStruct {
@@ -109,13 +110,13 @@ int main(int argc, char* argv[]){
 	state.MEMWB.instr=NOOPINSTRUCTION;
 	state.WBEND.instr=NOOPINSTRUCTION;
 	state.pc=0;
-	state.cycle=0;
+	state.cycles=0;
 	for(i=0;i<NUMREGS;i++){
 		state.reg[i]=0;	
 	}
-	newstate=state;
+	newState=state;
 	printf("\n");
-	run(&state,&newstate);
+	run(&state,&newState);
 	return 0;
 }
 void run(stateType *state,stateType *newState){
@@ -148,7 +149,7 @@ void run(stateType *state,stateType *newState){
 
 	//lw hazard
 	if(opcode(state->IDEX.instr)==2){
-		if((field1(state->IDEX.instr)==field0(state->IFID.instr)) || (field1(state->IDEX.instr))==filed1(state->IFID.instr)){
+		if((field1(state->IDEX.instr)==field0(state->IFID.instr)) || (field1(state->IDEX.instr))==field1(state->IFID.instr)){
 			newState->pc--;
 			newState->IDEX.instr=NOOPINSTRUCTION;
 			newState->IFID=state->IFID;
@@ -157,7 +158,7 @@ void run(stateType *state,stateType *newState){
 
 	/* --------------------- EX stage --------------------- */
 	newState->EXMEM.instr=state->IDEX.instr;
-	newState->EXEM.branchTarget=state->IDEX.offset+state->IDEX.pcPlus1;
+	newState->EXMEM.branchTarget=state->IDEX.offset+state->IDEX.pcPlus1;
 
 	int dest1,result1,dest2,result2,dest3,result3;
 	int op=opcode(state->IDEX.instr);
@@ -175,11 +176,11 @@ void run(stateType *state,stateType *newState){
 
 	if(MEMWBop==0 || MEMWBop==1){
 		dest2=field2(state->MEMWB.instr);
-		result2=state->EXMEM.writeData;
+		result2=state->MEMWB.writeData;
 	}
 	else if(MEMWBop==2){
 		dest2=field1(state->MEMWB.instr);
-		result2=state->EXMEM.writeData;
+		result2=state->MEMWB.writeData;
 	}
 
 	if(WBENDop==0 || WBENDop==1){
@@ -233,7 +234,7 @@ void run(stateType *state,stateType *newState){
 		newState->MEMWB.writeData=state->dataMem[state->EXMEM.aluResult];
 	else if(op==3)
 		newState->dataMem[state->EXMEM.aluResult]=state->EXMEM.readRegB;
-	else if(op==4 && State->EXMEM.aluResult==1){
+	else if(op==4 && state->EXMEM.aluResult==1){
 		newState->pc=state->EXMEM.branchTarget;
 		newState->IFID.instr=NOOPINSTRUCTION;
 		newState->IDEX.instr=NOOPINSTRUCTION;
