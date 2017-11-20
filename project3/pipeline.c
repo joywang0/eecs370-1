@@ -11,7 +11,7 @@
 #define JALR 5 /* JALR will not implemented for Project 3 */
 #define HALT 6
 #define NOOP 7
-#define MAXLINELENGTH 3000
+#define MAXLINELENGTH 1000
 #define NOOPINSTRUCTION 0x1c00000
 
 typedef struct IFIDStruct {
@@ -58,7 +58,7 @@ typedef struct stateStruct {
 	int cycles; /* number of cycles run so far */
 } stateType;
 
-void run(stateType *state,stateType *newState);
+void run(stateType state,stateType newState);
 void printState(stateType *statePtr);
 int field0(int instruction);
 int field1(int instruction);
@@ -69,8 +69,8 @@ int convertNum(int num);
 
 int main(int argc, char* argv[]){
     char line[MAXLINELENGTH];
-    stateType state;
-    stateType newState;
+    stateType state={0};
+    stateType newState={0};
     FILE *filePtr;
 
     if (argc != 2) {
@@ -93,17 +93,18 @@ int main(int argc, char* argv[]){
             exit(1);
         }
 		state.dataMem[state.numMemory]=state.instrMem[state.numMemory];
-		printf("memory[%d]=%d\n",state.numMemory,state.dataMem[state.numMemory]);
+	//	printf("memory[%d]=%d\n",state.numMemory,state.dataMem[state.numMemory]);
    	}
 
-	printf("%d memory words\n",state.numMemory+1);
+/*	printf("%d memory words\n",state.numMemory);
 	printf("	instruction memory:\n");
 	
 	int i;
 	for(i=0;i<state.numMemory;++i){
-		printf("instrMem[%d]: ",i);
+		printf("		instrMem[%d] ",i);
 		printInstruction(state.instrMem[i]);
-	}
+	}*/
+	int i;
 	state.IFID.instr=NOOPINSTRUCTION;
 	state.IDEX.instr=NOOPINSTRUCTION;
 	state.EXMEM.instr=NOOPINSTRUCTION;
@@ -114,83 +115,82 @@ int main(int argc, char* argv[]){
 	for(i=0;i<NUMREGS;i++){
 		state.reg[i]=0;	
 	}
-	newState=state;
-	printf("\n");
-	run(&state,&newState);
-	return 0;
+//	newState=state;
+//	printf("\n");
+	run(state,newState);
+	//return 0;
 }
-void run(stateType *state,stateType *newState){
-	int j=0;
-	while (j!=4/*1*/) {
+void run(stateType state,stateType newState){
+//	int j=0;
+	while (1) {
 
-		printState(state);
+		printState(&state);
 
 		/* check for halt */
-		if (opcode(state->MEMWB.instr) == HALT) {
+		if (opcode(state.MEMWB.instr) == HALT) {
 			printf("machine halted\n");
-			printf("total of %d cycles executed\n", state->cycles);
+			printf("total of %d cycles executed\n", state.cycles);
 			exit(0);
 		}	
 
 		newState = state;
-		newState->cycles++;
+		newState.cycles++;
 
 	/* --------------------- IF stage --------------------- */
-	newState->IFID.instr=state->instrMem[state->pc];
-	newState->IFID.pcPlus1=state->pc+1;
-	newState->pc=state->pc+1;
+	newState.IFID.instr=state.instrMem[state.pc];
+	newState.IFID.pcPlus1=state.pc+1;
+	newState.pc=state.pc+1;
+//	printf("PC:%d" state.pc);
 	/* --------------------- ID stage --------------------- */
-	newState->IDEX.instr=state->IFID.instr;
-	newState->IDEX.pcPlus1=state->IFID.pcPlus1;
-	newState->IDEX.readRegA=state->reg[field0(state->IFID.instr)];
-	newState->IDEX.readRegB=state->reg[field1(state->IFID.instr)];
-
+	newState.IDEX.instr=state.IFID.instr;
+	newState.IDEX.pcPlus1=state.IFID.pcPlus1;
+	newState.IDEX.readRegA=state.reg[field0(state.IFID.instr)];
+	newState.IDEX.readRegB=state.reg[field1(state.IFID.instr)];
+//	printf("%d",state.IDEX.instr);
 	//sign extend
-	newState->IDEX.offset=convertNum(field2(state->IFID.instr));
+	newState.IDEX.offset=convertNum(field2(state.IFID.instr));
 
 	//lw hazard
-	if(opcode(state->IDEX.instr)==2/* && opcode(state->IFID.instr!=7) && opcode(state->IFID.instr!=6) && opcode(state->IFID.instr!=5)*/){
-		if((field1(state->IDEX.instr)==field0(state->IFID.instr)) || (field1(state->IDEX.instr))==field1(state->IFID.instr)){
-			newState->pc--;
-			newState->IDEX.instr=NOOPINSTRUCTION;
-			newState->IFID=state->IFID;
+	if(opcode(state.IDEX.instr)==2/* && opcode(state.IFID.instr!=7) && opcode(state.IFID.instr!=6) && opcode(state.IFID.instr!=5)*/){
+		if(field1(state.IDEX.instr)==field0(state.IFID.instr) || field1(state.IDEX.instr)==field1(state.IFID.instr)){
+			newState.IDEX.instr=NOOPINSTRUCTION;
+			newState.IFID=state.IFID;
+			newState.pc--;
+		//	printf("The new PC is: %d",state.pc);
 		}	
 	}
 
 	/* --------------------- EX stage --------------------- */
-	newState->EXMEM.instr=state->IDEX.instr;
-	newState->EXMEM.branchTarget=state->IDEX.offset+state->IDEX.pcPlus1;
-
-	int dest1,result1,dest2,result2,dest3,result3;
-	int op=opcode(state->IDEX.instr);
-	int EXMEMop=opcode(state->EXMEM.instr);
-	int MEMWBop=opcode(state->MEMWB.instr);
-	int WBENDop=opcode(state->WBEND.instr);
-	int regA=field0(state->IDEX.instr);
-	int regB=field1(state->IDEX.instr);
+	int dest1=-1,result1=-1,dest2=-1,result2=-1,dest3=-1,result3=-1;
+	int op=opcode(state.IDEX.instr);
+	int EXMEMop=opcode(state.EXMEM.instr);
+	int MEMWBop=opcode(state.MEMWB.instr);
+	int WBENDop=opcode(state.WBEND.instr);
+	int regA=field0(state.IDEX.instr);
+	int regB=field1(state.IDEX.instr);
 	int resultA;
 	int resultB;
 	if(EXMEMop==0 || EXMEMop==1){
-		dest1=field2(state->EXMEM.instr);
-		result1=state->EXMEM.aluResult;
+		dest1=field2(state.EXMEM.instr);
+		result1=state.EXMEM.aluResult;
 	}
 
 	if(MEMWBop==0 || MEMWBop==1){
-		dest2=field2(state->MEMWB.instr);
-		result2=state->MEMWB.writeData;
+		dest2=field2(state.MEMWB.instr);
+		result2=state.MEMWB.writeData;
 	}
 	else if(MEMWBop==2){
-		dest2=field1(state->MEMWB.instr);
-		result2=state->MEMWB.writeData;
+		dest2=field1(state.MEMWB.instr);
+		result2=state.MEMWB.writeData;
 	}
 
 	if(WBENDop==0 || WBENDop==1){
-		dest3=field2(state->WBEND.instr);
-		result3=state->WBEND.writeData;
+		dest3=field2(state.WBEND.instr);
+		result3=state.WBEND.writeData;
 	}
 	else if(WBENDop==2){
-		dest3=field1(state->WBEND.instr);
-		result3=state->WBEND.writeData;
+		dest3=field1(state.WBEND.instr);
+		result3=state.WBEND.writeData;
 	}
 	
 	if(regA==dest1)
@@ -200,7 +200,7 @@ void run(stateType *state,stateType *newState){
 	else if(regA==dest3)
 		resultA=result3;
 	else
-		resultA=state->IDEX.readRegA;
+		resultA=state.IDEX.readRegA;
 	
 	if(regB==dest1)
 		resultB=result1;
@@ -209,54 +209,56 @@ void run(stateType *state,stateType *newState){
 	else if(regB==dest3)
 		resultB=result3;
 	else
-		resultB=state->IDEX.readRegB;
+		resultB=state.IDEX.readRegB;
 
 //	newState.readRegA=resultA;
-	newState->EXMEM.readRegB=resultB;
-
+	newState.EXMEM.instr=state.IDEX.instr;
+	newState.EXMEM.branchTarget=state.IDEX.offset+state.IDEX.pcPlus1;
+	newState.EXMEM.readRegB=resultB;
+//	printf("%d",state.IDEX.instr);
 	if(op==0)
-		newState->EXMEM.aluResult=resultA+resultB;
+		newState.EXMEM.aluResult=resultA+resultB;
 	else if(op==1)
-		newState->EXMEM.aluResult=~(resultA | resultB);
+		newState.EXMEM.aluResult=~(resultA | resultB);
 	else if(op==2 || op==3)
-		newState->EXMEM.aluResult=resultA+state->IDEX.offset;
+		newState.EXMEM.aluResult=resultA+state.IDEX.offset;
 	else if(op==4){
 		if(resultA==resultB)
-			newState->EXMEM.aluResult=1;
+			newState.EXMEM.aluResult=1;
 		else
-			newState->EXMEM.aluResult=0;
+			newState.EXMEM.aluResult=0;
 	}
 	/* --------------------- MEM stage --------------------- */
-	op=opcode(state->EXMEM.instr);
-	newState->EXMEM.instr=state->EXMEM.instr;
+	op=opcode(state.EXMEM.instr);
+	newState.MEMWB.instr=state.EXMEM.instr;
 	if(op==0 || op==1)
-		newState->MEMWB.writeData=state->EXMEM.aluResult;
+		newState.MEMWB.writeData=state.EXMEM.aluResult;
 	else if(op==2)
-		newState->MEMWB.writeData=state->dataMem[state->EXMEM.aluResult];
+		newState.MEMWB.writeData=state.dataMem[state.EXMEM.aluResult];
 	else if(op==3)
-		newState->dataMem[state->EXMEM.aluResult]=state->EXMEM.readRegB;
-	else if(op==4 && state->EXMEM.aluResult==1){
-		newState->pc=state->EXMEM.branchTarget;
-		newState->IFID.instr=NOOPINSTRUCTION;
-		newState->IDEX.instr=NOOPINSTRUCTION;
-		newState->EXMEM.instr=NOOPINSTRUCTION;
+		newState.dataMem[state.EXMEM.aluResult]=state.EXMEM.readRegB;
+	else if(op==4 && state.EXMEM.aluResult==1){
+		newState.pc=state.EXMEM.branchTarget;
+		newState.IFID.instr=NOOPINSTRUCTION;
+		newState.IDEX.instr=NOOPINSTRUCTION;
+		newState.EXMEM.instr=NOOPINSTRUCTION;
 	}
 
 	
 
 	/* --------------------- WB stage --------------------- */
-	op=opcode(state->MEMWB.instr);
-	newState->WBEND.instr=state->MEMWB.instr;
-	newState->WBEND.writeData=state->MEMWB.writeData;
+	op=opcode(state.MEMWB.instr);
+	newState.WBEND.instr=state.MEMWB.instr;
+	newState.WBEND.writeData=state.MEMWB.writeData;
 	if(op==0 || op==1)
-		newState->reg[field2(state->MEMWB.instr)]=state->MEMWB.writeData;	
+		newState.reg[field2(state.MEMWB.instr)]=state.MEMWB.writeData;	
 	else if(op==2)
-		newState->reg[field1(state->MEMWB.instr)]=state->MEMWB.writeData;
+		newState.reg[field1(state.MEMWB.instr)]=state.MEMWB.writeData;
 	state = newState; /* this is the last statement before end of the loop.
 			It marks the end of the cycle and updates the
 			current state with the values calculated in this
 			cycle */
-	++j;
+//	++j;
 	}
 }
 
