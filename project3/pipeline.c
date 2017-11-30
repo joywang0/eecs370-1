@@ -69,8 +69,8 @@ int convertNum(int num);
 
 int main(int argc, char* argv[]){
     char line[MAXLINELENGTH];
-    stateType state={0};
-    stateType newState={0};
+    stateType state;
+    stateType newState;
     FILE *filePtr;
 
     if (argc != 2) {
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]){
 //	newState=state;
 //	printf("\n");
 	run(state,newState);
-	//return 0;
+	return 0;
 }
 void run(stateType state,stateType newState){
 //	int j=0;
@@ -161,7 +161,7 @@ void run(stateType state,stateType newState){
 	}
 
 	/* --------------------- EX stage --------------------- */
-	int dest1=-1,result1=-1,dest2=-1,result2=-1,dest3=-1,result3=-1;
+	int dest1,result1,dest2,result2,dest3,result3;
 	int op=opcode(state.IDEX.instr);
 	int EXMEMop=opcode(state.EXMEM.instr);
 	int MEMWBop=opcode(state.MEMWB.instr);
