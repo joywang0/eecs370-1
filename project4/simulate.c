@@ -166,6 +166,7 @@ void store(int addr,stateType *state,int blockSizeInWords,int numberOfSets,int b
 		mycache->dirty[index]=1;
 		mycache->cache[index][blockOffset]=memory;
 		printAction(addr,1,processorToCache);
+		return;
 	}
 	else{
 		int ifEmptyBlock=0;
@@ -193,6 +194,7 @@ void store(int addr,stateType *state,int blockSizeInWords,int numberOfSets,int b
 			mycache->cache[index][blockOffset]=memory;
 			printAction(addr-j,blockSizeInWords,memoryToCache);
 			printAction(addr,1,processorToCache);
+			return;
 		}
 		else{
 			for(i=low;i<up;++i){
@@ -227,6 +229,7 @@ void store(int addr,stateType *state,int blockSizeInWords,int numberOfSets,int b
 			mycache->cache[index][blockOffset]=memory;
 			printAction(addr-j,blockSizeInWords,memoryToCache);
 			printAction(addr,1,processorToCache);
+			return;
 		}
 		
 	}
