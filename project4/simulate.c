@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 		mycache.dirty[i]=0;
 		mycache.tag[i]=-1;
 		for(j=0;j<blockSizeInWords;++j){
-			mycache.cache[i][j]=-1;	
+			mycache.cache[i][j]=0;	
 		}			
 	}
     /* read in the entire machine-code file into memory */
@@ -304,37 +304,37 @@ int main(int argc, char *argv[])
 //	printState(&state);
 //printf("%d",state.mem[state.pc]>>22);
 	while(1){
-		int a=(state.mem[state.pc]&(0x7<<19))>>19;
-		int b=(state.mem[state.pc]&(0x7<<16))>>16;
-		//printf("%d",b);
-		int op=state.mem[state.pc]>>22;
 		int flag=load(state.pc,&state,blockSizeInWords,numberOfSets,blocksPerSet,&mycache);
+		int a=(flag&(0x7<<19))>>19;
+		int b=(flag&(0x7<<16))>>16;
+		//printf("%d",b);
+		int op=flag>>22;
 		if(flag==25165824)
 			break;
 		//printf("%d",op);
 		if(op==0x0){
-			int destReg=state.mem[state.pc]&(0x7);
+			int destReg=flag&(0x7);
 			state.reg[destReg]=state.reg[a]+state.reg[b];
 			state.pc++;
 		}
 		else if(op==0x1){
-			int destReg=state.mem[state.pc]&(0x7);
+			int destReg=flag&(0x7);
 			state.reg[destReg]=~(state.reg[a] | state.reg[b]);
 			state.pc++;
 		}
 		else if(op==0x2){
-			int offset=convertNum(state.mem[state.pc]&(0x0000ffff));	
+			int offset=convertNum(flag&(0x0000ffff));	
 			state.reg[b]=load(state.reg[a]+offset,&state,blockSizeInWords,numberOfSets,blocksPerSet,&mycache);
 			state.pc++;
 		}
 		else if(op==0x3){
-			int offset=convertNum(state.mem[state.pc]&(0x0000ffff));
+			int offset=convertNum(flag&(0x0000ffff));
 			store(offset+state.reg[a],&state,blockSizeInWords,numberOfSets,blocksPerSet,&mycache,state.reg[b]);
 		//	state.mem[offset+state.reg[a]]=state.reg[b];
 			state.pc++;
 		}
 		else if(op==0x4){
-			int offset=convertNum(state.mem[state.pc]&(0x0000ffff));
+			int offset=convertNum(flag&(0x0000ffff));
 			if(state.reg[a]==state.reg[b])
 				state.pc=state.pc+1+offset;
 			else
