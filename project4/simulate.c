@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 		mycache.dirty[i]=0;
 		mycache.tag[i]=-1;
 		for(j=0;j<blockSizeInWords;++j){
-			mycache.cache[i][j]=0;	
+			mycache.cache[i][j]=-1;	
 		}			
 	}
     /* read in the entire machine-code file into memory */
