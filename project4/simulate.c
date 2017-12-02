@@ -55,7 +55,7 @@ int load(int addr,stateType *state,int blockSizeInWords,int numberOfSets,int blo
 	int tag=tag1(addr,blockSizeInWords,numberOfSets);
 	int low=blocksPerSet*(setindex);
 	int up=blocksPerSet*(setindex+1);
-	int memory=state->mem[addr];
+	int memory/*=state->mem[addr];*/;
 	int hit=0;
 	int i,index;
 	for(i=low;i<up;++i){
@@ -74,7 +74,7 @@ int load(int addr,stateType *state,int blockSizeInWords,int numberOfSets,int blo
 		}
 		mycache->LRU[index]=0;
 		printAction(addr,1,cacheToProcessor);
-		return memory;
+		return mycache->cache[index][blockOffset];
 	}
 	else{
 		int ifEmptyBlock=0;
@@ -96,11 +96,12 @@ int load(int addr,stateType *state,int blockSizeInWords,int numberOfSets,int blo
 			int j=0;
 			while((addr-j)%blockSizeInWords!=0)
 				++j;
-			for(i=0;i<blocksPerSet;++i)
+			for(i=0;i<blockSizeInWords;++i)
 				mycache->cache[index][i]=state->mem[addr-j+i];
 			printAction(addr-j,blockSizeInWords,memoryToCache);
 			printAction(addr,1,cacheToProcessor);
-			return memory;
+			return mycache->cache[index][blockOffset];
+
 		}
 		else{
 			for(i=low;i<up;++i){
@@ -129,11 +130,12 @@ int load(int addr,stateType *state,int blockSizeInWords,int numberOfSets,int blo
 			int j=0;
 			while((addr-j)%blockSizeInWords!=0)
 				++j;
-			for(i=0;i<blocksPerSet;++i)
+			for(i=0;i<blockSizeInWords;++i)
 				mycache->cache[index][i]=state->mem[addr-j+i];
 			printAction(addr-j,blockSizeInWords,memoryToCache);
 			printAction(addr,1,cacheToProcessor);
-			return memory;
+			return mycache->cache[index][blockOffset];
+
 		}
 	}
 }
@@ -189,7 +191,7 @@ void store(int addr,stateType *state,int blockSizeInWords,int numberOfSets,int b
 			int j=0;
 			while((addr-j)%blockSizeInWords!=0)
 				++j;
-			for(i=0;i<blocksPerSet;++i)
+			for(i=0;i<blockSizeInWords;++i)
 				mycache->cache[index][i]=state->mem[addr-j+i];
 			mycache->cache[index][blockOffset]=memory;
 			printAction(addr-j,blockSizeInWords,memoryToCache);
@@ -224,7 +226,7 @@ void store(int addr,stateType *state,int blockSizeInWords,int numberOfSets,int b
 			int j=0;
 			while((addr-j)%blockSizeInWords!=0)
 				++j;
-			for(i=0;i<blocksPerSet;++i)
+			for(i=0;i<blockSizeInWords;++i)
 				mycache->cache[index][i]=state->mem[addr-j+i];
 			mycache->cache[index][blockOffset]=memory;
 			printAction(addr-j,blockSizeInWords,memoryToCache);
@@ -309,8 +311,8 @@ int main(int argc, char *argv[])
 		int b=(flag&(0x7<<16))>>16;
 		//printf("%d",b);
 		int op=flag>>22;
-		if(flag==25165824)
-			break;
+		//if(flag==25165824)
+		//	break;
 		//printf("%d",op);
 		if(op==0x0){
 			int destReg=flag&(0x7);
@@ -347,6 +349,7 @@ int main(int argc, char *argv[])
 		else if(op==0x6){
 		//	printState(&state);
 			state.pc++;
+			break;
 		}
 
 		else if(op==0x7){
